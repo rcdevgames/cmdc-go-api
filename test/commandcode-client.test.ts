@@ -5,6 +5,13 @@ import { createCommandCodeClient, upstreamErrorStatus } from "../src/commandcode
 import type { CommandCodeGenerateInput } from "../src/commandcode/types.js";
 import { loadConfig } from "../src/config.js";
 
+const testConfig = (overrides: Record<string, string> = {}) => loadConfig({
+  auth_cc: "test-commandcode-key",
+  apikey: "request-key",
+  debug: "false",
+  ...overrides,
+});
+
 const sampleRequest: CommandCodeGenerateInput = {
   memory: null,
   taste: null,

@@ -55,11 +55,13 @@ Add these in **Project Settings → Environment Variables**:
 |---|---:|---|
 | `auth_cc` | yes | CommandCode subscription credential (`user_...`) |
 | `apikey` | yes | Secret key clients must send to this proxy |
-| `debug` | no | `true` or `false`; use `false` normally |
+| `debug` | yes | `true` or `false`; set it explicitly even when disabled |
 
 Important:
 
-- `auth_cc` is the upstream CommandCode credential. It stays server-side and must never be used as the client proxy key.
+- `auth_cc` adalah credential upstream CommandCode; tetap server-side dan jangan pernah dipakai sebagai proxy key client.
+- `debug` wajib diisi eksplisit dengan `true` atau `false`; service crash kalau kosong/tidak ada.
+- Kalau salah satu dari tiga env wajib hilang, startup langsung gagal. Ini disengaja supaya deployment tidak hidup dalam keadaan setengah terkonfigurasi.
 - `apikey` is the only key clients should receive. Use a long random value.
 - Do not commit `.env`, `.env.local`, or any real credential.
 - Do not put `auth_cc` in `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or client-side code.

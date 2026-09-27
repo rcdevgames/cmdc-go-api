@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { CommandCodeClient } from "../src/commandcode/client.js";
+import { loadConfig } from "../src/config.js";
 import { buildServer } from "../src/server.js";
 
 const emptyClient: CommandCodeClient = {
@@ -11,10 +12,17 @@ const emptyClient: CommandCodeClient = {
 
 describe("utility routes", () => {
   it("lists configured proxy models and reports health", async () => {
-    const app = buildServer({ commandCodeClient: emptyClient });
+    const app = buildServer({ commandCodeClient: emptyClient, config: {
+      ...loadConfig({ auth_cc: "test-commandcode-key", apikey: "request-key", debug: "false" }),
+    } });
+    await app.ready();
 
     expect((await app.inject("/healthz")).json()).toEqual({ status: "ok" });
-    const models = (await app.inject("/v1/models")).json();
+    const models = (await app.inject({
+      method: "GET",
+      url: "/v1/models",
+      headers: { authorization: "Bearer request-key" },
+    })).json();
     expect(models.object).toBe("list");
     expect(models.data).toEqual(expect.arrayContaining([
       expect.objectContaining({

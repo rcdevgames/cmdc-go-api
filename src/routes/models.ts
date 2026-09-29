@@ -111,7 +111,7 @@ export async function registerModels(
   app.get("/v1/models", async (request, reply) => {
     const authorization = request.headers.authorization;
     const supplied = typeof authorization === "string" ? authorization.match(/^Bearer\s+(.+)$/i)?.[1]?.trim() : undefined;
-    if (activeConfig.proxyApiKey && supplied !== activeConfig.proxyApiKey) {
+    if (activeConfig.proxyCredentials.length && !activeConfig.proxyCredentials.some((item) => item.value === supplied)) {
       return reply.code(401).send({ error: { message: "Invalid proxy API key", type: "authentication_error" } });
     }
     return toModelsResponse([{ id: activeConfig.fixedModel, attachment: true, modalities: { input: ["text", "image"], output: ["text"] } }]);

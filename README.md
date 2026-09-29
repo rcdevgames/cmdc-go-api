@@ -2,7 +2,7 @@
 
 Stateless CommandCode subscription proxy for Vercel. It forwards requests to CommandCode's `/alpha/generate` endpoint and translates them for OpenAI, Codex CLI, Anthropic, Claude Code, and OpenAI-compatible clients.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/rcdevgames/commandcode-vercel-proxy&env=auth_cc,apikey,debug&envDescription=CommandCode%20credential%20and%20proxy%20access%20key&envLink=https://github.com/rcdevgames/commandcode-vercel-proxy%23vercel-environment-variables)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/rcdevgames/commandcode-vercel-proxy&env=auth_cc_1,apikey_1,apikey_1_auth_cc,debug&envDescription=CommandCode credential pool and proxy access key configuration&envLink=https://github.com/rcdevgames/commandcode-vercel-proxy%23vercel-environment-variables)
 
 ## Fixed model
 
@@ -53,18 +53,20 @@ Add these in **Project Settings → Environment Variables**:
 
 | Name | Required | Value |
 |---|---:|---|
-| `auth_cc` | yes | CommandCode subscription credential (`user_...`) |
-| `apikey` | yes | Secret key clients must send to this proxy |
+| `auth_cc_N` | yes | CommandCode subscription credential; add `_2`, `_3`, ... as needed |
+| `apikey_N` | yes | Client key; add `_2`, `_3`, ... as needed |
+| `apikey_N_auth_cc` | yes | Comma-separated upstream IDs allowed for that client, e.g. `1,2,3` |
 | `debug` | yes | `true` or `false`; set it explicitly even when disabled |
 
 Important:
 
-- `auth_cc` adalah credential upstream CommandCode; tetap server-side dan jangan pernah dipakai sebagai proxy key client.
-- `debug` wajib diisi eksplisit dengan `true` atau `false`; service crash kalau kosong/tidak ada.
-- Kalau salah satu dari tiga env wajib hilang, startup langsung gagal. Ini disengaja supaya deployment tidak hidup dalam keadaan setengah terkonfigurasi.
-- `apikey` is the only key clients should receive. Use a long random value.
+- `auth_cc_N` adalah credential upstream CommandCode; tetap server-side dan jangan pernah dipakai sebagai proxy key client.
+- `apikey_N` adalah key client; scope aksesnya ditentukan oleh `apikey_N_auth_cc`.
+- Credential upstream dipilih round-robin secara independen untuk setiap `apikey_N`.
+- Kalau salah satu credential yang diwajibkan hilang, startup langsung gagal. Ini disengaja supaya deployment tidak hidup dalam keadaan setengah terkonfigurasi.
+- `apikey_N` is the only key clients should receive. Use a long random value.
 - Do not commit `.env`, `.env.local`, or any real credential.
-- Do not put `auth_cc` in `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or client-side code.
+- Do not put any `auth_cc_N` in `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or client-side code.
 - Select the correct Vercel environments: **Production**, **Preview**, or both.
 - After changing variables, redeploy; existing deployments do not automatically receive updated values.
 - If a credential was pasted into chat, logs, or a public repository, revoke/regenerate it.
@@ -72,7 +74,7 @@ Important:
 
 ## Client setup
 
-Use the proxy `apikey`, not `auth_cc`.
+Use a proxy `apikey_N`, not an `auth_cc_N`. The client key may access only the upstream credentials listed in its `apikey_N_auth_cc` scope.
 
 ### Claude Code
 
@@ -122,7 +124,7 @@ npm install
 npm run typecheck
 npm test
 
-auth_cc='user_...' apikey='local-secret' debug='false' npm run dev
+auth_cc_1='user_...' apikey_1='local-secret' apikey_1_auth_cc='1' debug='false' npm run dev
 ```
 
 Smoke test:

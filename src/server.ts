@@ -11,10 +11,12 @@ import { registerModels } from "./routes/models.js";
 import { registerResponses } from "./routes/responses.js";
 import { registerAnthropic } from "./routes/anthropic.js";
 import { openAiError } from "./errors.js";
+import { CredentialPool } from "./credential-pool.js";
 
 export type ServerDependencies = {
   commandCodeClient: CommandCodeClient;
   config?: ProxyConfig;
+  credentialPool?: CredentialPool;
   logger?: FastifyServerOptions["logger"];
 };
 
@@ -40,6 +42,7 @@ function withSafeRequestSerializer(
 
 export function buildServer(dependencies: ServerDependencies): FastifyInstance {
   const config = dependencies.config ?? loadConfig(process.env);
+  const credentialPool = dependencies.credentialPool ?? new CredentialPool(config.upstreamCredentials);
   const app = Fastify({
     logger: withSafeRequestSerializer(dependencies.logger ?? {
         level: "info",
@@ -77,9 +80,9 @@ export function buildServer(dependencies: ServerDependencies): FastifyInstance {
     }));
   });
 
-  void registerChatCompletions(app, { ...dependencies, config });
-  void registerAnthropic(app, { ...dependencies, config });
-  void registerResponses(app, { ...dependencies, config });
+  void registerChatCompletions(app, { ...dependencies, config, credentialPool });
+  void registerAnthropic(app, { ...dependencies, config, credentialPool });
+  void registerResponses(app, { ...dependencies, config, credentialPool });
   void registerModels(app, config);
   void registerHealth(app);
 

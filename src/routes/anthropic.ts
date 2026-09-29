@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import { CredentialPool } from "../credential-pool.js";
 import { resolveCredential } from "../auth.js";
 import type { CommandCodeClient } from "../commandcode/client.js";
 import type { CommandCodeEvent } from "../commandcode/types.js";
@@ -96,10 +97,11 @@ function sendError(reply: FastifyReply, status: number, message: string) {
   return reply.code(status).send({ type: "error", error: { type: status === 401 ? "authentication_error" : "api_error", message } });
 }
 
-export async function registerAnthropic(app: FastifyInstance, dependencies: { commandCodeClient: CommandCodeClient; config: ProxyConfig }) {
+export async function registerAnthropic(app: FastifyInstance, dependencies: { commandCodeClient: CommandCodeClient; config: ProxyConfig; credentialPool: CredentialPool }) {
   for (const path of ["/v1/messages", "/message"]) app.post(path, async (request: FastifyRequest, reply: FastifyReply) => {
-    const apiKey = resolveCredential(request.headers);
-    if (!apiKey) return sendError(reply, 401, "Missing or invalid proxy API key");
+    const credential = resolveCredential(request.headers, dependencies.config, dependencies.credentialPool);
+    if (!credential) return sendError(reply, 401, "Missing or invalid proxy API key");
+    const apiKey = credential.upstreamKey;
     const raw = request.body as AnthropicBody;
     if (!Array.isArray(raw?.messages) || raw.messages.length === 0) return sendError(reply, 400, "messages is required");
     const chat = toChat(raw, dependencies.config);

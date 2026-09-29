@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { ZodError } from "zod";
 
+import { CredentialPool } from "../credential-pool.js";
 import { resolveCredential } from "../auth.js";
 import { CommandCodeUpstreamError, sanitizeForLog, type CommandCodeClient } from "../commandcode/client.js";
 import type { CommandCodeEvent } from "../commandcode/types.js";
@@ -22,6 +23,7 @@ import { logRouteError, preRead, remainingEvents, streamError, watchDisconnect }
 type ResponsesRouteDependencies = {
   commandCodeClient: CommandCodeClient;
   config: ProxyConfig;
+  credentialPool: CredentialPool;
 };
 
 function sendError(reply: FastifyReply, status: number, message: string, code: string, param: string | null = null) {
@@ -35,8 +37,9 @@ function sendError(reply: FastifyReply, status: number, message: string, code: s
 export async function registerResponses(app: FastifyInstance, dependencies: ResponsesRouteDependencies): Promise<void> {
   app.post("/v1/responses", async (request: FastifyRequest, reply: FastifyReply) => {
     reply.header("x-request-id", request.id);
-    const apiKey = resolveCredential(request.headers);
-    if (!apiKey) return sendError(reply, 401, "Missing CommandCode API credential", "missing_api_key");
+    const credential = resolveCredential(request.headers, dependencies.config, dependencies.credentialPool);
+    if (!credential) return sendError(reply, 401, "Missing CommandCode API credential", "missing_api_key");
+    const apiKey = credential.upstreamKey;
 
     const lifecycle = watchDisconnect(reply);
     let iterator: AsyncIterator<CommandCodeEvent> | undefined;
